@@ -1,0 +1,23 @@
+[package]
+name = "zed-mcp-server"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88.0"
+license = "MIT"
+description = "Hardened read-only MCP server for the zed-pkg GitHub organization"
+publish = false
+
+[[bin]]
+name = "zed-mcp-server"
+path = "src/main.rs"
+
+[dependencies]
+ore-mcp-org-server = { git = "https://github.com/ORESoftware/mcp-rust-libs", rev = "cf4523ec14fcca969ce2570f6a659c53e049773d" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
