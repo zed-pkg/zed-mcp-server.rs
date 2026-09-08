@@ -23,7 +23,7 @@ jobs:
       # Bind peer-authority evidence to the actual Zed MCP implementation.
       # Preserve the newer fleet contract and all existing lockfile/security checks.
       # DEN-3828: strict wire JSON, pinned shared parser bytes, and current-run evidence.
-      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@2c1bcb5bf156f21da00ca914782a547c4635fe8f
+      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@a1648e79ce7e8fcadbcc1a822a71d2c43b44a039
         with:
           binary: zed-mcp-server
           profile: fleet-v2
