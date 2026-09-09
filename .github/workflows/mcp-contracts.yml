@@ -25,11 +25,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
           toolchain: 1.95.0
-      # Bind peer-authority evidence to the actual Zed MCP implementation.
-      # This immutable template head itself pins current TJSV 22818431... with
-      # expanded consumer-admission negatives, preserving fleet-v2 and all
-      # existing lock/security/runtime checks.
-      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@858d46a91a7963b0103d170760a7d565bc34dea6
+      # Bind peer-authority evidence to the merged reusable template. That
+      # immutable template pins TJSV 22818431... with nineteen canonical
+      # consumer-admission refusals while preserving fleet-v2 and all existing
+      # lock, access-boundary, security, and compiled-runtime checks.
+      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@c3be821da8bf9739a10da9a2285761da8c305fd6
         with:
           binary: zed-mcp-server
           profile: fleet-v2
