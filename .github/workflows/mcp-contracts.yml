@@ -16,14 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify reviewed Zed MCP head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
           toolchain: 1.95.0
-      # Bind peer-authority evidence to the actual Zed MCP implementation.
-      # Preserve the newer fleet contract and all existing lockfile/security checks.
-      # DEN-3828: strict wire JSON, pinned shared parser bytes, and current-run evidence.
-      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@a1648e79ce7e8fcadbcc1a822a71d2c43b44a039
+      # Bind peer-authority evidence to the merged reusable template. That
+      # immutable template pins TJSV 22818431... with nineteen canonical
+      # consumer-admission refusals while preserving fleet-v2 and all existing
+      # lock, access-boundary, security, and compiled-runtime checks.
+      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@c3be821da8bf9739a10da9a2285761da8c305fd6
         with:
           binary: zed-mcp-server
           profile: fleet-v2
