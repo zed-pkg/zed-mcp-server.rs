@@ -26,9 +26,10 @@ jobs:
         with:
           toolchain: 1.95.0
       # Bind peer-authority evidence to the actual Zed MCP implementation.
-      # This immutable template head itself pins current TJSV 4473504c... and
-      # preserves the newer fleet contract plus existing lock/security checks.
-      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@111fbef31555c61780d2847a83f6dcb5f0986fd7
+      # This immutable template head itself pins current TJSV 22818431... with
+      # expanded consumer-admission negatives, preserving fleet-v2 and all
+      # existing lock/security/runtime checks.
+      - uses: ORESoftware/org-mcp-server-template.rs/.github/actions/mcp-contracts@858d46a91a7963b0103d170760a7d565bc34dea6
         with:
           binary: zed-mcp-server
           profile: fleet-v2
