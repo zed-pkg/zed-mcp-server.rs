@@ -19,7 +19,7 @@ url = "https://github.com/zed-pkg/zed-mcp-server.rs"
 "shared-auth/shared-auth-lib" = "^0.1.0"
 "zed-pkg/zed-clients" = "^0.1.0"
 "zed-pkg/zed-interfaces" = "^0.1.0"
-"zed-pkg/zed-lib" = "^0.1.0"
+"zed-pkg/zed-lib-core" = "^0.1.0"
 "zed-pkg/zed-cli" = "^0.3.0"
 
 [build]
