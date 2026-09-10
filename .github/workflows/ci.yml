@@ -42,7 +42,7 @@ jobs:
           expected = {
               'zed-pkg/zed-clients': '^0.1.0',
               'zed-pkg/zed-interfaces': '^0.1.0',
-              'zed-pkg/zed-lib': '^0.1.0',
+              'zed-pkg/zed-lib-core': '^0.1.0',
               'zed-pkg/zed-cli': '^0.3.0',
           }
           deps = zpkg['dependencies']
@@ -50,6 +50,9 @@ jobs:
               assert deps.get(package) == requirement, (
                   f'{package}: expected {requirement}, got {deps.get(package)!r}'
               )
+          assert 'zed-pkg/zed-lib' not in deps, (
+              'zed-pkg/zed-lib is a retired predecessor; use zed-pkg/zed-lib-core'
+          )
           PY
       - name: Format
         run: cargo fmt --all -- --check
