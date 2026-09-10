@@ -28,6 +28,29 @@ jobs:
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Verify locked dependency graph
         run: cargo metadata --locked --format-version 1 >/dev/null
+      - name: Verify Zed package identity and MCP dependency topology
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tomllib
+
+          zpkg = tomllib.loads(Path('.zpkg.toml').read_text())
+          cargo = tomllib.loads(Path('Cargo.toml').read_text())
+          assert zpkg['package']['name'] == cargo['package']['name']
+          assert zpkg['package']['version'] == cargo['package']['version']
+
+          expected = {
+              'zed-pkg/zed-clients': '^0.1.0',
+              'zed-pkg/zed-interfaces': '^0.1.0',
+              'zed-pkg/zed-lib': '^0.1.0',
+              'zed-pkg/zed-cli': '^0.3.0',
+          }
+          deps = zpkg['dependencies']
+          for package, requirement in expected.items():
+              assert deps.get(package) == requirement, (
+                  f'{package}: expected {requirement}, got {deps.get(package)!r}'
+              )
+          PY
       - name: Format
         run: cargo fmt --all -- --check
       - name: Lint
