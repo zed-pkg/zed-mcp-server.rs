@@ -40,6 +40,8 @@ jobs:
           assert zpkg['package']['version'] == cargo['package']['version']
 
           expected = {
+              'shared-auth/shared-auth-lib': '^0.1.0',
+              'shared-auth/shared-auth-lib-core': '^0.1.0',
               'zed-pkg/zed-clients': '^0.1.0',
               'zed-pkg/zed-interfaces': '^0.1.0',
               'zed-pkg/zed-lib-core': '^0.1.0',
