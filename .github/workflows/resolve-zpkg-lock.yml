@@ -32,13 +32,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: zed-pkg/zed-cli
-          ref: 95238c0caf41dab776680f9cb12d5367c7ef6341
+          ref: c7533b0e79e083516cef46467defa8ded70886fb
           path: .resolver/zed-cli
           persist-credentials: false
 
       - name: Verify exact resolver head
         env:
-          EXPECTED_RESOLVER_SHA: 95238c0caf41dab776680f9cb12d5367c7ef6341
+          EXPECTED_RESOLVER_SHA: c7533b0e79e083516cef46467defa8ded70886fb
         run: test "$(git -C .resolver/zed-cli rev-parse HEAD)" = "$EXPECTED_RESOLVER_SHA"
 
       - name: Read immutable resolver Rust toolchain
