@@ -1,0 +1,158 @@
+name: Resolve Zed lock candidate
+
+on:
+  pull_request:
+    paths:
+      - .zpkg.toml
+      - .zpkg.lock
+      - .github/workflows/resolve-zpkg-lock.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact consumer head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact consumer head
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out pinned Zed resolver
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: zed-pkg/zed-cli
+          ref: c7533b0e79e083516cef46467defa8ded70886fb
+          path: .resolver/zed-cli
+          persist-credentials: false
+
+      - name: Verify exact resolver head
+        env:
+          EXPECTED_RESOLVER_SHA: c7533b0e79e083516cef46467defa8ded70886fb
+        run: test "$(git -C .resolver/zed-cli rev-parse HEAD)" = "$EXPECTED_RESOLVER_SHA"
+
+      - name: Read immutable resolver Rust toolchain
+        id: resolver-toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          channel="$(python3 - <<'PY'
+          import re
+          import tomllib
+
+          with open('.resolver/zed-cli/rust-toolchain.toml', 'rb') as source:
+              channel = tomllib.load(source)['toolchain']['channel']
+          if not isinstance(channel, str) or re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', channel) is None:
+              raise SystemExit(f'resolver toolchain must be an immutable Rust version, got {channel!r}')
+          print(channel)
+          PY
+          )"
+          printf 'channel=%s\n' "$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Record immutable resolution context
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'consumer_sha=%s\n' "$(git rev-parse HEAD)"
+            printf 'resolver_sha=%s\n' "$(git -C .resolver/zed-cli rev-parse HEAD)"
+            printf 'resolver_rust_toolchain=%s\n' '${{ steps.resolver-toolchain.outputs.channel }}'
+            printf 'allow_build=false\n'
+            printf 'allow_native_deps=false\n'
+            printf 'allow_install_hooks=false\n'
+            printf 'interactive=false\n'
+          } > "$RUNNER_TEMP/zpkg-resolution-context.txt"
+
+      - name: Install resolver Rust toolchain
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
+        with:
+          toolchain: ${{ steps.resolver-toolchain.outputs.channel }}
+
+      - name: Build exact Zed resolver
+        working-directory: .resolver/zed-cli
+        run: cargo build --release --locked --bin zed
+
+      - name: Resolve project lock without package hooks
+        env:
+          ZED_PKG_HOME: ${{ runner.temp }}/zed-home
+          ZED_PKG_ALLOW_BUILD: 'false'
+          ZED_PKG_ALLOW_NATIVE_DEPS: 'false'
+          ZED_PKG_ALLOW_INSTALL_HOOKS: 'false'
+          ZED_PKG_INTERACTIVE: 'false'
+        run: |
+          set -euo pipefail
+          resolver="$PWD/.resolver/zed-cli/target/release/zed"
+
+          if git ls-files --error-unmatch .zpkg.lock >/dev/null 2>&1; then
+            printf '%s\n' \
+              'temporary lock-resolution workflow must be removed once .zpkg.lock is tracked' \
+              | tee "$RUNNER_TEMP/zpkg-resolution-error.txt" >&2
+            exit 86
+          fi
+          rm -f .zpkg.lock
+
+          set +e
+          "$resolver" install \
+            > "$RUNNER_TEMP/zpkg-install.stdout" \
+            2> "$RUNNER_TEMP/zpkg-install.stderr"
+          install_status=$?
+          set -e
+          printf '%s\n' "$install_status" > "$RUNNER_TEMP/zpkg-install.exit-code"
+          cat "$RUNNER_TEMP/zpkg-install.stdout"
+          cat "$RUNNER_TEMP/zpkg-install.stderr" >&2
+          if [ "$install_status" -ne 0 ]; then
+            printf 'zed install failed with exit code %s\n' "$install_status" \
+              | tee "$RUNNER_TEMP/zpkg-resolution-error.txt" >&2
+            exit "$install_status"
+          fi
+
+          if [ ! -s .zpkg.lock ]; then
+            printf '%s\n' 'zed install succeeded without producing a non-empty .zpkg.lock' \
+              | tee "$RUNNER_TEMP/zpkg-resolution-error.txt" >&2
+            exit 87
+          fi
+          sha256sum .zpkg.lock | tee "$RUNNER_TEMP/zpkg-lock.sha256"
+
+          set +e
+          "$resolver" validate --manifest .zpkg.toml --lock .zpkg.lock --require-lock --json \
+            > "$RUNNER_TEMP/zpkg-validate.json" \
+            2> "$RUNNER_TEMP/zpkg-validate.stderr"
+          validate_status=$?
+          set -e
+          printf '%s\n' "$validate_status" > "$RUNNER_TEMP/zpkg-validate.exit-code"
+          cat "$RUNNER_TEMP/zpkg-validate.stderr" >&2
+          if [ "$validate_status" -ne 0 ]; then
+            printf 'zed validate failed with exit code %s\n' "$validate_status" \
+              | tee "$RUNNER_TEMP/zpkg-resolution-error.txt" >&2
+            exit "$validate_status"
+          fi
+          test -s "$RUNNER_TEMP/zpkg-validate.json"
+
+      - name: Upload lock candidate and resolution evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: zed-mcp-server-zpkg-lock-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .zpkg.lock
+            ${{ runner.temp }}/zpkg-resolution-context.txt
+            ${{ runner.temp }}/zpkg-install.stdout
+            ${{ runner.temp }}/zpkg-install.stderr
+            ${{ runner.temp }}/zpkg-install.exit-code
+            ${{ runner.temp }}/zpkg-lock.sha256
+            ${{ runner.temp }}/zpkg-validate.json
+            ${{ runner.temp }}/zpkg-validate.stderr
+            ${{ runner.temp }}/zpkg-validate.exit-code
+            ${{ runner.temp }}/zpkg-resolution-error.txt
+          if-no-files-found: error
+          retention-days: 7

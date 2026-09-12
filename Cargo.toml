@@ -16,7 +16,7 @@ name = "zed-mcp-http"
 path = "src/http.rs"
 
 [dependencies]
-ore-mcp-org-server = { git = "https://github.com/ORESoftware/mcp-rust-libs", rev = "f470ca5be6389bb20c2291acdfc3a382cb9b39b2" }
+ore-mcp-org-server = { git = "https://github.com/ORESoftware/mcp-rust-libs", rev = "ed98a3ce98d46e6e0c80b03c5e57e50d4bb75ee2" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
