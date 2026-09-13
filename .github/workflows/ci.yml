@@ -15,6 +15,9 @@ concurrency:
 
 jobs:
   rust:
+    # PR verification is deferred to gha-indie-worker on indiebuild.dev. Keep
+    # push/manual CI intact, but skip before runner allocation on pull requests.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
