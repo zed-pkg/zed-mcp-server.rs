@@ -23,7 +23,10 @@ pub const PROVIDER_OPERATIONS: &[(&str, &[&str])] = &[
     ("neon", &["read_projects", "read_project_branches"]),
     ("cloudflare", &["read_zone", "read_dns_records"]),
     ("k8s_cluster", &["read_deployments", "read_pods"]),
-    ("nats", &["read_service_snapshot", "read_dependency_snapshot"]),
+    (
+        "nats",
+        &["read_service_snapshot", "read_dependency_snapshot"],
+    ),
 ];
 
 /// Returns the exact organization, repository, service, and Zed dependency identity.
@@ -56,7 +59,9 @@ mod tests {
         assert!(PROVIDER_OPERATIONS.iter().all(|(provider, operations)| {
             !provider.contains('*')
                 && operations.len() == 2
-                && operations.iter().all(|operation| operation.starts_with("read_"))
+                && operations
+                    .iter()
+                    .all(|operation| operation.starts_with("read_"))
         }));
     }
 }
