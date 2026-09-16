@@ -4,6 +4,9 @@ use ore_mcp_org_server::OrgSpec;
 
 const DEPENDENCIES: &[&str] = &[
     "ORESoftware/mcp-rust-libs",
+    "ORESoftware/ores-interfaces",
+    "ORESoftware/api-docs",
+    "ORESoftware/typespec-json-schema-validator",
     "ores-otel/ores-mcp-server-core-libs.rs",
     "shared-auth/shared-auth-clients",
     "shared-auth/shared-auth-interfaces",
@@ -20,10 +23,7 @@ pub const PROVIDER_OPERATIONS: &[(&str, &[&str])] = &[
     ("neon", &["read_projects", "read_project_branches"]),
     ("cloudflare", &["read_zone", "read_dns_records"]),
     ("k8s_cluster", &["read_deployments", "read_pods"]),
-    (
-        "nats",
-        &["read_service_snapshot", "read_dependency_snapshot"],
-    ),
+    ("nats", &["read_service_snapshot", "read_dependency_snapshot"]),
 ];
 
 /// Returns the exact organization, repository, service, and Zed dependency identity.
@@ -50,12 +50,13 @@ mod tests {
         assert_eq!(spec.organization, "zed-pkg");
         assert_eq!(spec.repository, "zed-pkg/zed-mcp-server.rs");
         assert_eq!(PROVIDER_OPERATIONS.len(), 8);
+        assert!(DEPENDENCIES.contains(&"ORESoftware/ores-interfaces"));
+        assert!(DEPENDENCIES.contains(&"ORESoftware/api-docs"));
+        assert!(DEPENDENCIES.contains(&"ORESoftware/typespec-json-schema-validator"));
         assert!(PROVIDER_OPERATIONS.iter().all(|(provider, operations)| {
             !provider.contains('*')
                 && operations.len() == 2
-                && operations
-                    .iter()
-                    .all(|operation| operation.starts_with("read_"))
+                && operations.iter().all(|operation| operation.starts_with("read_"))
         }));
     }
 }
