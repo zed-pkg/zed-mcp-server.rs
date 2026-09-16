@@ -52,5 +52,29 @@ jobs:
       - name: Build deterministic package artifact
         run: zed pack
 
-      - name: Round-trip artifact and execute publish smoke test
-        run: zed r2g
+      - name: Unpack exact artifact and execute publish smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find .zed/pack -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          test -n "$archive"
+          target="$RUNNER_TEMP/published-artifact"
+          rm -rf "$target"
+          mkdir -p "$target"
+          tar -xzf "$archive" -C "$target"
+
+          if [[ ! -f "$target/Cargo.toml" ]]; then
+            manifest="$(find "$target" -mindepth 2 -maxdepth 2 -type f -name Cargo.toml -print -quit)"
+            test -n "$manifest"
+            target="${manifest%/Cargo.toml}"
+          fi
+
+          test -f "$target/.zpkg.toml"
+          test -f "$target/Cargo.toml"
+          test -x "$target/scripts/tests/smoke-published-artifact.sh"
+
+          (
+            cd "$target"
+            cargo build --release --locked --bin zed-mcp-server
+          )
+          ZED_PKG_TEST_TARGET="$target" "$target/scripts/tests/smoke-published-artifact.sh"
