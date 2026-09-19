@@ -1,10 +1,10 @@
 schema_version: ores.compose.v1
-project: zed-mcp-server.rs
+project: zed-mcp-server
 allow_lazy_start: false
 
 services:
-  zed-mcp-server.rs:
-    name: zed-mcp-server.rs
+  zed-mcp-server:
+    name: zed-mcp-server
     runtime: host
     build:
       - ["cargo", "build", "--bins"]
